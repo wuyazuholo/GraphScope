@@ -10,6 +10,10 @@ FROM $REGISTRY/graphscope/graphscope-dev:$BUILDER_VERSION-$ARCH AS builder
 ARG CI=false
 
 COPY --chown=graphscope:graphscope . /home/graphscope/GraphScope
+COPY ./analytical_engine/apps/pagerank/pagerank_directed.h /opt/graphscope/include/grape/analytical_apps/pagerank/pagerank_directed.h
+COPY ./analytical_engine/apps/pagerank/pagerank_context.h /opt/graphscope/include/grape/analytical_apps/pagerank/pagerank_context.h
+COPY ./analytical_engine/apps/pagerank/pagerank_directed.h /opt/vineyard/include/grape/analytical_apps/pagerank/pagerank_directed.h
+COPY ./analytical_engine/apps/pagerank/pagerank_context.h /opt/vineyard/include/grape/analytical_apps/pagerank/pagerank_context.h
 
 RUN cd /home/graphscope/GraphScope/ && \
     if [ "${CI}" = "true" ]; then \
@@ -36,6 +40,10 @@ USER root
 
 COPY ./k8s/utils/kube_ssh /usr/local/bin/kube_ssh
 COPY --from=builder /home/graphscope/install /opt/graphscope/
+COPY --from=builder /opt/graphscope/include/grape/analytical_apps/pagerank/pagerank_directed.h /opt/graphscope/include/grape/analytical_apps/pagerank/pagerank_directed.h
+COPY --from=builder /opt/graphscope/include/grape/analytical_apps/pagerank/pagerank_context.h /opt/graphscope/include/grape/analytical_apps/pagerank/pagerank_context.h
+COPY --from=builder /opt/vineyard/include/grape/analytical_apps/pagerank/pagerank_directed.h /opt/vineyard/include/grape/analytical_apps/pagerank/pagerank_directed.h
+COPY --from=builder /opt/vineyard/include/grape/analytical_apps/pagerank/pagerank_context.h /opt/vineyard/include/grape/analytical_apps/pagerank/pagerank_context.h
 RUN mkdir -p /tmp/gs && (mv /opt/graphscope/builtin /tmp/gs/builtin || true) && chown -R graphscope:graphscope /tmp/gs
 RUN chmod +x /opt/graphscope/bin/*
 

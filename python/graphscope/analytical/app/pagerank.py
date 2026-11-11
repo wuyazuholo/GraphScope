@@ -29,13 +29,19 @@ logger = logging.getLogger("graphscope")
 
 @project_to_simple
 @not_compatible_for("arrow_property", "dynamic_property")
-def pagerank(graph, delta=0.85, max_round=10):
+def pagerank(graph, delta=0.85, max_round=None, tol=None):
     """Evaluate PageRank on a graph.
+
+    Directed graphs stop when the global L1 rank change falls below tol.
+    Undirected graphs retain the fixed-round implementation.
 
     Args:
         graph (:class:`graphscope.Graph`): A simple graph.
-        delta (float, optional): Dumping factor. Defaults to 0.85.
-        max_round (int, optional): Maximum number of rounds. Defaults to 10.
+        delta (float, optional): Damping factor. Defaults to 0.85.
+        max_round (int, optional): Maximum number of rounds. Defaults to 500
+            for directed graphs and 10 for undirected graphs.
+        tol (float, optional): Directed graph convergence threshold.
+            Defaults to 1e-6; unsupported for undirected graphs.
 
     Returns:
         :class:`graphscope.framework.context.VertexDataContextDAGNode`:
@@ -54,10 +60,20 @@ def pagerank(graph, delta=0.85, max_round=10):
         >>> c = graphscope.pagerank(pg, delta=0.85, max_round=10)
         >>> sess.close()
     """
-    algo = "pagerank_directed" if graph.is_directed() else "pagerank"
     delta = float(delta)
-    max_round = int(max_round)
-    return AppAssets(algo=algo, context="vertex_data")(graph, delta, max_round)
+    if graph.is_directed():
+        max_round = 500 if max_round is None else int(max_round)
+        tol = 1e-6 if tol is None else float(tol)
+        return AppAssets(algo="pagerank_directed", context="vertex_data")(
+            graph, delta, max_round, tol
+        )
+
+    if tol is not None:
+        raise ValueError("tol is only supported for directed graphs")
+    max_round = 10 if max_round is None else int(max_round)
+    return AppAssets(algo="pagerank", context="vertex_data")(
+        graph, delta, max_round
+    )
 
 
 @project_to_simple
